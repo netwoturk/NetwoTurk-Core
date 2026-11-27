@@ -1,4 +1,4 @@
-# Influencer Ajans – Yayıncı Ödül Sistemi 1.0.0
+# Influencer Ajans – Yayıncı Ödül Sistemi 1.1.0
 
 PrestaShop 8.2.x için aylık TikTok XLSX raporundan yayıncı puanı hesaplayan bağımsız modül.
 
@@ -23,9 +23,18 @@ Hesap: `floor(aktiflik teşviki × %2 × USD/TRY × 1000)`. Ara yuvarlama yapıl
 - Dağıtım transaction ve idempotency anahtarlarıyla korunur. Modülü kaldırmak finansal tabloları silmez.
 - Lisans anahtarı düz metin loglanmaz. Lisans merkezi yalnızca HTTPS üzerinden kullanılır.
 
+## Ödül ve talep akışları
+
+- Yönetici hediye ve keşfet paketlerini katalogdan tanımlar. Hediye talebi puanı ve stoğu transaction içinde ayırır.
+- Keşfet talebi İstanbul saatinde alınır, UTC saklanır; minimum ön bildirim ve slot kapasitesi sunucuda doğrulanır. Harici TikTok entegrasyonu olmadığı için zamanı gelen işler otomatik tamamlanmaz, manuel inceleme kuyruğuna düşer.
+- Nakit çekim yayıncı bazında açılır. Asgari 100 TL, `1.000 puan = 1 TL`; Türk IBAN formatı ve MOD-97 checksum doğrulanır.
+- Talep durum geçişleri sunucuda sınırlandırılır. Rezerv kesin harcamaya dönüşürken ikinci kesinti yapılmaz; ret/iptal rezervi tek sefer çözer.
+- Bildirimler outbox tablosunda idempotent tutulur. `php modules/ntcreatorrewards/cron/process.php` komutu e-posta kuyruğunu ve zamanı gelen manuel keşfet işlerini küçük partilerle işler.
+- Yönetici tarih aralığına göre Türkçe PDF talep raporu indirebilir.
+
 ## Sınırlar
 
-Bu paket TikTok'a bağlanmaz ve keşfet hizmetini otomatik başlatmaz. İlk sürümün teslim edilen çalışan çekirdeği: handle talebi/onayı, XLSX aktarımı, eşleştirme, hassas puan hesabı, fark dağıtımı, cüzdan, performans ve hareket görünümü, temel talep kayıt altyapısı ve lisans doğrulamasıdır. Katalog/rezervasyon, keşfet takvimi/iş kuyruğu, nakit IBAN akışı, e-posta outbox ve PDF raporu sonraki sürüm kapsamıdır; arayüzde varmış gibi gösterilmez.
+Bu paket TikTok'a bağlanmaz ve keşfet hizmetini otomatik başlatmaz. Keşfet desteğinin gerçek uygulanması yönetici görev kuyruğunda manuel olarak doğrulanmalıdır. Banka transferi otomatik yapılmaz; `Ödendi` durumu yalnızca gerçek ödemenin yönetici kaydıdır.
 
 ## Test
 

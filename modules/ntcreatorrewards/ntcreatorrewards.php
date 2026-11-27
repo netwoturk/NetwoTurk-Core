@@ -6,11 +6,12 @@ require_once __DIR__.'/classes/NtcrHandle.php';
 require_once __DIR__.'/classes/NtcrDecimal.php';
 require_once __DIR__.'/classes/NtcrXlsxReader.php';
 require_once __DIR__.'/classes/NtcrService.php';
+require_once __DIR__.'/classes/NtcrRequestService.php';
 require_once __DIR__.'/classes/NtcrLicenseClient.php';
 
 class NtCreatorRewards extends Module
 {
-    const VERSION = '1.0.0';
+    const VERSION = '1.1.0';
     public function __construct()
     {
         $this->name='ntcreatorrewards'; $this->tab='administration'; $this->version=self::VERSION;

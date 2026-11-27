@@ -5,7 +5,7 @@
   "menu_slot": 6,
   "description": "TikTok yayıncı performans, puan ve ödül yönetimi",
   "module": "ntcreatorrewards",
-  "current_version": "1.0.0",
+  "current_version": "1.1.0",
   "license_api": {
     "authority": "https://netwoturktech.com/module/ntlicensemanager/",
     "product_code": "ntcreatorrewards",
