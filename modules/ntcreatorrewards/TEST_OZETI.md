@@ -9,7 +9,7 @@
 ## Gerçek sonuçlar
 
 - PHP lint: 16/16 PHP dosyası başarılı.
-- Saf testler: 7/7 assertion başarılı.
+- Saf testler: 9/9 assertion başarılı; puan/handle testlerine geçerli ve geçersiz TR IBAN checksum testleri eklendi.
 - Referans XLSX: 131 satır, 267.72520000 USD toplam, 41 pozitif teşvik, 31 sıfır Creator ID, 3 eksik Handle, kimliksiz iki satırda 1.32640000 USD — tamamı doğrulandı.
 - Test CLI'sında PHP `zip` uzantısı yoktu; XLSX XML'i güvenli, salt-okunur test shim'iyle açılarak aynı üretim parser'ı doğrulandı. Üretimde modül `zip` yoksa kurulumu reddeder.
 

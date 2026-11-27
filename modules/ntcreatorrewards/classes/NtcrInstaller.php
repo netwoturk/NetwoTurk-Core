@@ -6,22 +6,23 @@ class NtcrInstaller
         if (!extension_loaded('bcmath') || !class_exists('ZipArchive')) {
             return false;
         }
-        foreach(self::sql() as $sql) if(!Db::getInstance()->execute($sql)) return false;
+        if(!self::upgrade()) return false;
         Configuration::updateValue('NTCR_NOTIFY_EMAIL','destek@netwoturk.com');
         Configuration::updateValue('NTCR_RATE','0.02000000');
         Configuration::updateValue('NTCR_LICENSE_API','https://netwoturktech.com/module/ntlicensemanager/');
         return self::tabs($module);
     }
+    public static function upgrade(){foreach(self::sql() as $sql)if(!Db::getInstance()->execute($sql))return false;return true;}
     public static function uninstall($module)
     {
-        foreach(array('AdminNtCreatorRewards','AdminNtCreatorRewardsImport','AdminNtCreatorRewardsPublishers','AdminNtCreatorRewardsRequests','AdminNtCreatorRewardsLicense') as $class){$id=(int)Tab::getIdFromClassName($class);if($id)(new Tab($id))->delete();}
+        foreach(array('AdminNtCreatorRewards','AdminNtCreatorRewardsImport','AdminNtCreatorRewardsPublishers','AdminNtCreatorRewardsCatalog','AdminNtCreatorRewardsRequests','AdminNtCreatorRewardsReports','AdminNtCreatorRewardsLicense') as $class){$id=(int)Tab::getIdFromClassName($class);if($id)(new Tab($id))->delete();}
         return true; // Finansal ve talep geçmişi bilinçli olarak korunur.
     }
     private static function tabs($m)
     {
         $parent=new Tab();$parent->active=1;$parent->class_name='AdminNtCreatorRewards';$parent->module=$m->name;$parent->id_parent=0;$parent->icon='redeem';
         foreach(Language::getLanguages(false) as $l)$parent->name[$l['id_lang']]='Yayıncı Ödülleri'; if(!$parent->add())return false;
-        $items=array('AdminNtCreatorRewardsImport'=>'Rapor Aktarımı','AdminNtCreatorRewardsPublishers'=>'Yayıncılar','AdminNtCreatorRewardsRequests'=>'Talepler','AdminNtCreatorRewardsLicense'=>'Lisans');
+        $items=array('AdminNtCreatorRewardsImport'=>'Rapor Aktarımı','AdminNtCreatorRewardsPublishers'=>'Yayıncılar','AdminNtCreatorRewardsCatalog'=>'Ödül Kataloğu','AdminNtCreatorRewardsRequests'=>'Talepler','AdminNtCreatorRewardsReports'=>'PDF Raporları','AdminNtCreatorRewardsLicense'=>'Lisans');
         foreach($items as $c=>$n){$t=new Tab();$t->active=1;$t->class_name=$c;$t->module=$m->name;$t->id_parent=(int)$parent->id;foreach(Language::getLanguages(false) as $l)$t->name[$l['id_lang']]=$n;if(!$t->add())return false;} return true;
     }
     private static function sql()
@@ -34,7 +35,12 @@ class NtcrInstaller
         "CREATE TABLE IF NOT EXISTS `{$p}ntcr_ledger` (`id_ledger` BIGINT UNSIGNED AUTO_INCREMENT,`id_shop` INT UNSIGNED NOT NULL,`id_publisher` INT UNSIGNED NOT NULL,`period` CHAR(6) NULL,`type` VARCHAR(32) NOT NULL,`points` BIGINT NOT NULL,`idempotency_key` VARCHAR(190) NOT NULL,`reference_type` VARCHAR(32) NULL,`reference_id` BIGINT UNSIGNED NULL,`description` VARCHAR(255) NOT NULL,`id_employee` INT UNSIGNED NULL,`date_add` DATETIME NOT NULL,PRIMARY KEY(`id_ledger`),UNIQUE KEY `uq_idem`(`idempotency_key`),KEY `idx_wallet`(`id_publisher`,`date_add`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS `{$p}ntcr_period_entitlement` (`id_shop` INT UNSIGNED NOT NULL,`id_publisher` INT UNSIGNED NOT NULL,`period` CHAR(6) NOT NULL,`net_points` BIGINT NOT NULL DEFAULT 0,`last_batch_id` INT UNSIGNED NOT NULL,`date_upd` DATETIME NOT NULL,PRIMARY KEY(`id_shop`,`id_publisher`,`period`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
         "CREATE TABLE IF NOT EXISTS `{$p}ntcr_request` (`id_request` BIGINT UNSIGNED AUTO_INCREMENT,`request_no` VARCHAR(32) NOT NULL,`id_shop` INT UNSIGNED NOT NULL,`id_publisher` INT UNSIGNED NOT NULL,`type` ENUM('gift','explore','cash') NOT NULL,`status` VARCHAR(32) NOT NULL DEFAULT 'pending',`points` BIGINT UNSIGNED NOT NULL,`snapshot_json` LONGTEXT NOT NULL,`public_note` TEXT NULL,`private_note` TEXT NULL,`date_add` DATETIME NOT NULL,`date_upd` DATETIME NOT NULL,PRIMARY KEY(`id_request`),UNIQUE KEY `uq_no`(`request_no`),KEY `idx_owner`(`id_publisher`,`date_add`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
-        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_audit` (`id_audit` BIGINT UNSIGNED AUTO_INCREMENT,`id_shop` INT UNSIGNED NOT NULL,`actor_type` VARCHAR(16) NOT NULL,`actor_id` INT UNSIGNED NOT NULL,`action` VARCHAR(64) NOT NULL,`entity_type` VARCHAR(32) NOT NULL,`entity_id` BIGINT UNSIGNED NULL,`payload_json` LONGTEXT NULL,`date_add` DATETIME NOT NULL,PRIMARY KEY(`id_audit`),KEY `idx_entity`(`entity_type`,`entity_id`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4"
+        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_audit` (`id_audit` BIGINT UNSIGNED AUTO_INCREMENT,`id_shop` INT UNSIGNED NOT NULL,`actor_type` VARCHAR(16) NOT NULL,`actor_id` INT UNSIGNED NOT NULL,`action` VARCHAR(64) NOT NULL,`entity_type` VARCHAR(32) NOT NULL,`entity_id` BIGINT UNSIGNED NULL,`payload_json` LONGTEXT NULL,`date_add` DATETIME NOT NULL,PRIMARY KEY(`id_audit`),KEY `idx_entity`(`entity_type`,`entity_id`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
+        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_catalog` (`id_catalog` INT UNSIGNED AUTO_INCREMENT,`id_shop` INT UNSIGNED NOT NULL,`type` ENUM('gift','explore') NOT NULL,`name` VARCHAR(190) NOT NULL,`description` TEXT NULL,`points` BIGINT UNSIGNED NOT NULL,`stock` INT NULL,`service_scope` TEXT NULL,`min_notice_hours` INT UNSIGNED NOT NULL DEFAULT 24,`slot_capacity` INT UNSIGNED NOT NULL DEFAULT 1,`active` TINYINT(1) NOT NULL DEFAULT 1,`position` INT NOT NULL DEFAULT 0,`date_add` DATETIME NOT NULL,`date_upd` DATETIME NOT NULL,PRIMARY KEY(`id_catalog`),KEY `idx_list`(`id_shop`,`type`,`active`,`position`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
+        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_reservation` (`id_reservation` BIGINT UNSIGNED AUTO_INCREMENT,`id_request` BIGINT UNSIGNED NOT NULL,`id_publisher` INT UNSIGNED NOT NULL,`points` BIGINT UNSIGNED NOT NULL,`status` ENUM('held','spent','released') NOT NULL DEFAULT 'held',`idempotency_key` VARCHAR(190) NOT NULL,`date_add` DATETIME NOT NULL,`date_upd` DATETIME NOT NULL,PRIMARY KEY(`id_reservation`),UNIQUE KEY `uq_req`(`id_request`),UNIQUE KEY `uq_idem`(`idempotency_key`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
+        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_request_event` (`id_event` BIGINT UNSIGNED AUTO_INCREMENT,`id_request` BIGINT UNSIGNED NOT NULL,`from_status` VARCHAR(32) NULL,`to_status` VARCHAR(32) NOT NULL,`public_note` TEXT NULL,`private_note` TEXT NULL,`id_employee` INT UNSIGNED NULL,`date_add` DATETIME NOT NULL,PRIMARY KEY(`id_event`),KEY `idx_request`(`id_request`,`date_add`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
+        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_explore_job` (`id_job` BIGINT UNSIGNED AUTO_INCREMENT,`id_request` BIGINT UNSIGNED NOT NULL,`scheduled_at_utc` DATETIME NOT NULL,`status` ENUM('manual_queue','processing','completed','review','failed') NOT NULL DEFAULT 'manual_queue',`attempts` INT UNSIGNED NOT NULL DEFAULT 0,`lock_key` VARCHAR(190) NOT NULL,`external_id` VARCHAR(190) NULL,`last_error` TEXT NULL,`date_upd` DATETIME NOT NULL,PRIMARY KEY(`id_job`),UNIQUE KEY `uq_request`(`id_request`),UNIQUE KEY `uq_lock`(`lock_key`),KEY `idx_due`(`status`,`scheduled_at_utc`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4",
+        "CREATE TABLE IF NOT EXISTS `{$p}ntcr_outbox` (`id_outbox` BIGINT UNSIGNED AUTO_INCREMENT,`event_key` VARCHAR(190) NOT NULL,`type` VARCHAR(32) NOT NULL,`recipient` VARCHAR(190) NOT NULL,`payload_json` LONGTEXT NOT NULL,`status` ENUM('pending','sent','failed') NOT NULL DEFAULT 'pending',`attempts` INT UNSIGNED NOT NULL DEFAULT 0,`next_attempt_at` DATETIME NOT NULL,`last_error` TEXT NULL,`date_add` DATETIME NOT NULL,`date_sent` DATETIME NULL,PRIMARY KEY(`id_outbox`),UNIQUE KEY `uq_event`(`event_key`),KEY `idx_send`(`status`,`next_attempt_at`)) ENGINE={$e} DEFAULT CHARSET=utf8mb4"
         );
     }
 }
