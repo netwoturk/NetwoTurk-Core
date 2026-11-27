@@ -1,0 +1,5 @@
+<?php
+if($argc<2){fwrite(STDERR,"Usage: php prestashop_smoke.php <prestashop-root>\n");exit(2);}echo "BOOTSTRAP START\n";require rtrim($argv[1],'/\\').'/config/config.inc.php';echo "BOOTSTRAP OK\n";
+$m=Module::getInstanceByName('ntcreatorrewards');if(!$m){fwrite(STDERR,"Module discovery failed\n");exit(1);}if($m->isInstalled())$m->uninstall();if(!$m->install()){fwrite(STDERR,"Install failed: ".json_encode($m->getErrors())."\n");exit(1);}
+$required=array('ntcr_publisher','ntcr_batch','ntcr_source_row','ntcr_wallet','ntcr_ledger','ntcr_period_entitlement','ntcr_request','ntcr_audit');foreach($required as $t){$found=Db::getInstance()->getValue("SHOW TABLES LIKE '".pSQL(_DB_PREFIX_.$t)."'");if(!$found){fwrite(STDERR,"Missing table: $t\n");exit(1);}}
+if(!Hook::getIdByName('displayCustomerAccount')){fwrite(STDERR,"Hook missing\n");exit(1);}echo "INSTALL OK\n";if(!$m->uninstall()){fwrite(STDERR,"Uninstall failed\n");exit(1);}foreach($required as $t){$found=Db::getInstance()->getValue("SHOW TABLES LIKE '".pSQL(_DB_PREFIX_.$t)."'");if(!$found){fwrite(STDERR,"Data table removed unexpectedly: $t\n");exit(1);}}echo "UNINSTALL DATA PRESERVATION OK\n";
