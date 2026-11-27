@@ -11,7 +11,7 @@ require_once __DIR__.'/classes/NtcrLicenseClient.php';
 
 class NtCreatorRewards extends Module
 {
-    const VERSION = '1.1.1';
+    const VERSION = '1.1.2';
     public function __construct()
     {
         $this->name='ntcreatorrewards'; $this->tab='administration'; $this->version=self::VERSION;
